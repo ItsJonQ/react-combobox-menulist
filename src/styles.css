@@ -1,0 +1,13 @@
+/* Styles are not required. They're here for convience */
+.is-focus {
+  background: #eee;
+}
+.is-selected {
+  font-weight: bold;
+}
+
+.search-highlight {
+  background: yellow;
+  font-style: normal;
+  text-decoration: underline;
+}
