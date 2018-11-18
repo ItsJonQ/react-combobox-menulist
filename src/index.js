@@ -33,9 +33,12 @@ const initialState = {
   index: "",
   previousSelectedIndex: "",
   selectedIndex: "",
+  // IRL, you would hydrate the store with callbacks provided by component props
   onSelect: () => undefined
 };
 
+// IRL, you would create unique stores per MenuList instance rather than use
+// a shared/global one.
 const store = createStore(initialState);
 
 //////////
@@ -237,18 +240,22 @@ class PerformantRenderer extends React.PureComponent {
     if (event.shiftKey) {
       modifier = 5;
     }
+    // Up
     if (event.keyCode === 38) {
       event.preventDefault();
       this.props.incrementUp(modifier);
     }
+    // Down
     if (event.keyCode === 40) {
       event.preventDefault();
       this.props.incrementDown(modifier);
     }
+    // Enter
     if (event.keyCode === 13) {
       event.preventDefault();
       this.props.selectItemFromIndex();
     }
+    // Tab
     if (event.keyCode === 9) {
       this.handleTab(event);
     }
@@ -258,6 +265,10 @@ class PerformantRenderer extends React.PureComponent {
     // We'll update the DOM for every render cycle
     // It may feel "wrong"... But, this is FAR cheaper than
     // relying on React to do it.
+
+    // That is because we're doing with a single (more or less) calculcation
+    // rather than spreading the work throughout the menu/item tree.
+    // This is especially important if item nesting is going to be a thing.
     optimizedItemRenderFromProps(this.props);
     return null;
   }
@@ -280,7 +291,12 @@ function MenuList(props) {
   return (
     <Provider store={store}>
       <div>
-        <ConnectedMenu>{props.children}</ConnectedMenu>
+        <ConnectedMenu>
+          {
+            // This adds flexibility via the renderProp pattern
+            props.children
+          }
+        </ConnectedMenu>
         <ConnectedPerformantRenderer />
       </div>
     </Provider>
@@ -328,6 +344,7 @@ class Combobox extends React.PureComponent {
     if (itemsMarkup.length) {
       return itemsMarkup;
     } else {
+      // We can even account for no search results. Neat!
       return (
         <div>
           No results for "
@@ -345,6 +362,9 @@ class Combobox extends React.PureComponent {
     );
     const markup = `${index + 1}. ${enhancedValue}`;
 
+    // Let's get a bit fancy and highlight the search values.
+    // Note: This is a very naive way of doing things. It's good enough
+    // for our example though.
     return (
       <div
         {...props}
@@ -385,6 +405,8 @@ function App() {
   );
 }
 
+// This should be contained within a parent/root component rather than using
+// a global/shared store.
 function getState() {
   return store.getState();
 }
@@ -423,11 +445,6 @@ function isDOMNodeValidItem(node) {
 }
 // Helper function for scroll handling + keyboard
 // Thanks Downshift! <3
-/**
- * Scroll node into view if necessary
- * @param {HTMLElement} node the element that should scroll into view
- * @param {HTMLElement} rootNode the root element of the component
- */
 function scrollIntoView(node, rootNode) {
   if (node === null) {
     return;
@@ -445,4 +462,5 @@ function scrollIntoView(node, rootNode) {
 }
 
 const rootElement = document.getElementById("root");
+
 ReactDOM.render(<App />, rootElement);
