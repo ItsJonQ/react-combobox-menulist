@@ -11,7 +11,7 @@ import "./styles.css";
 // After that, the interactions are buttery smooth.
 
 // P.S. I wouldn't do 100,000. Codesandbox breaks at that point.
-const ITEM_COUNT = 100;
+const ITEM_COUNT = 50;
 const DATA_ATTR = "data-custom-namespace-plz-menulist-index";
 
 //////////
@@ -33,6 +33,7 @@ const initialState = {
   index: "",
   previousSelectedIndex: "",
   selectedIndex: "",
+  selectedItem: undefined,
   // IRL, you would hydrate the store with callbacks provided by component props
   onSelect: () => undefined
 };
@@ -201,21 +202,23 @@ const optimizedItemRenderFromProps = ({
   nextNode.classList.add("is-focus");
   scrollIntoView(nextNode);
 
-  // Render selected (active) styles
-  // Handle the UI for select/active, however it is you wish!
-  const previousSelectedNode = findItemDOMNodeById(previousSelectedItem);
-  if (previousSelectedNode) {
-    previousSelectedNode.classList.remove("is-selected");
-  }
+  requestAnimationFrame(() => {
+    // Render selected (active) styles
+    // Handle the UI for select/active, however it is you wish!
+    const previousSelectedNode = findItemDOMNodeById(previousSelectedItem);
+    if (previousSelectedNode) {
+      previousSelectedNode.classList.remove("is-selected");
+    }
 
-  const selectedNode = findItemDOMNodeById(selectedItem);
-  if (selectedNode) {
-    selectedNode.classList.add("is-selected");
-    selectedNode.parentElement.setAttribute(
-      "aria-activedescendant",
-      selectedNode.id
-    );
-  }
+    const selectedNode = findItemDOMNodeById(selectedItem);
+    if (selectedNode) {
+      selectedNode.classList.add("is-selected");
+      selectedNode.parentElement.setAttribute(
+        "aria-activedescendant",
+        selectedNode.id
+      );
+    }
+  });
 };
 
 // Handle the rendering business logic with this React component.
@@ -229,10 +232,12 @@ class PerformantRenderer extends React.PureComponent {
 
   handleTab = event => {
     if (!this.props.enableTabNavigation) return;
-    const target = document.activeElement;
-    if (!isDOMNodeValidItem(target)) return;
-    event.preventDefault();
-    this.props.focusItem({ target });
+    requestAnimationFrame(() => {
+      const target = document.activeElement;
+      if (!isDOMNodeValidItem(target)) return;
+      event.preventDefault();
+      this.props.focusItem({ target });
+    });
   };
 
   handleOnKeyDown = event => {
@@ -297,7 +302,7 @@ function MenuList(props) {
             props.children
           }
         </ConnectedMenu>
-        <ConnectedPerformantRenderer />
+        <ConnectedPerformantRenderer {...props} />
       </div>
     </Provider>
   );
@@ -356,9 +361,10 @@ class Combobox extends React.PureComponent {
 
   renderItemWithSearchHint = (item, index) => {
     const props = getItemProps(item, index);
+    const { isSelected, ...rest } = props;
     const enhancedValue = props.value.replace(
-      this.state.inputValue,
-      `<em class="search-highlight">${this.state.inputValue}</em>`
+      this.state.inputValue.toLowerCase(),
+      `<em class="search-highlight">${this.state.inputValue.toLowerCase()}</em>`
     );
     const markup = `${index + 1}. ${enhancedValue}`;
 
@@ -367,7 +373,7 @@ class Combobox extends React.PureComponent {
     // for our example though.
     return (
       <div
-        {...props}
+        {...rest}
         key={props.id}
         dangerouslySetInnerHTML={{
           __html: markup
@@ -416,9 +422,10 @@ function getItemProps(item, index) {
   return {
     ...item,
     [DATA_ATTR]: index,
-    tabindex: state.enableTabNavigation ? 0 : null,
+    tabIndex: state.enableTabNavigation ? 0 : null,
     role: "option",
-    index
+    index,
+    isSelected: state.selectedItem === item
   };
 }
 
